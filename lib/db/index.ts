@@ -1,0 +1,25 @@
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "@/db/schema";
+
+const connectionString = process.env.DATABASE_URL || "postgresql://postgres:password@localhost:5432/studentos";
+
+// Global singleton to prevent connection leaks during Next.js hot reload
+const globalForDb = globalThis as unknown as {
+  conn: postgres.Sql | undefined;
+};
+
+const client =
+  globalForDb.conn ??
+  postgres(connectionString, {
+    prepare: false,
+    ssl: connectionString.includes("supabase") || connectionString.includes("pooler") ? "require" : undefined,
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForDb.conn = client;
+}
+
+export const db = drizzle(client, { schema });
+export type DB = typeof db;
+
