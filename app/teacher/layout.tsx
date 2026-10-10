@@ -8,7 +8,7 @@ import {
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireTeacher } from "@/lib/auth/rbac";
 
 const teacherNavItems: NavItem[] = [
   { label: "Overview", href: "/teacher/dashboard", icon: <LayoutDashboard /> },
@@ -24,10 +24,10 @@ function getInitials(name: string) {
 }
 
 export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
-  const displayName = user?.name || "Faculty";
+  const session = await requireTeacher();
+  const displayName = session.user.name || "Faculty";
   const initials = getInitials(displayName);
-  const department = user?.teacherProfile?.department || "Faculty";
+  const department = session.user.teacherProfile?.department || "Faculty";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#EAE6DE] text-[#1C1917] p-4 md:p-6 lg:p-8">

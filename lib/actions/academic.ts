@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { semesters, classes, subjects } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { formatErrorMessage } from "@/lib/utils/error-formatter";
+import { assertAdmin } from "@/lib/auth/rbac";
 
 export interface AddSemesterData {
   name: string;
@@ -61,6 +63,8 @@ export async function getAcademicData() {
 
 export async function addSemesterAction(data: AddSemesterData) {
   try {
+    await assertAdmin();
+
     if (!data.name || !data.academicYear || !data.startDate || !data.endDate) {
       return { success: false, error: "All semester fields are required." };
     }
@@ -90,13 +94,15 @@ export async function addSemesterAction(data: AddSemesterData) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to create semester.",
+      error: formatErrorMessage(err, "Failed to create semester."),
     };
   }
 }
 
 export async function addClassAction(data: AddClassData) {
   try {
+    await assertAdmin();
+
     if (!data.name || !data.department) {
       return { success: false, error: "Class name and department are required." };
     }
@@ -119,13 +125,15 @@ export async function addClassAction(data: AddClassData) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to create class.",
+      error: formatErrorMessage(err, "Failed to create class."),
     };
   }
 }
 
 export async function addSubjectAction(data: AddSubjectData) {
   try {
+    await assertAdmin();
+
     if (!data.name || !data.code) {
       return { success: false, error: "Subject name and code are required." };
     }
@@ -150,13 +158,14 @@ export async function addSubjectAction(data: AddSubjectData) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to create subject. (Check if code is unique)",
+      error: formatErrorMessage(err, "Failed to create subject. Check if subject code is unique."),
     };
   }
 }
 
 export async function deleteSubjectAction(subjectId: string) {
   try {
+    await assertAdmin();
     await db.delete(subjects).where(eq(subjects.id, subjectId));
     try {
       revalidatePath("/admin/academic");
@@ -165,13 +174,14 @@ export async function deleteSubjectAction(subjectId: string) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to delete subject.",
+      error: formatErrorMessage(err, "Failed to delete subject."),
     };
   }
 }
 
 export async function deleteClassAction(classId: string) {
   try {
+    await assertAdmin();
     await db.delete(classes).where(eq(classes.id, classId));
     try {
       revalidatePath("/admin/academic");
@@ -180,7 +190,7 @@ export async function deleteClassAction(classId: string) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to delete class.",
+      error: formatErrorMessage(err, "Failed to delete class."),
     };
   }
 }
@@ -195,7 +205,7 @@ export async function deleteSemesterAction(semesterId: string) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to delete semester.",
+      error: formatErrorMessage(err, "Failed to delete semester."),
     };
   }
 }

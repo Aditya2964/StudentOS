@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AIChatPanel } from "@/components/ai/ai-chat-panel";
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireStudent } from "@/lib/auth/rbac";
 
 const studentNavItems: NavItem[] = [
   { label: "Dashboard", href: "/student/dashboard", icon: <LayoutDashboard /> },
@@ -32,10 +32,10 @@ function getInitials(name: string) {
 }
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
-  const displayName = user?.name || "Student";
+  const session = await requireStudent();
+  const displayName = session.user.name || "Student";
   const initials = getInitials(displayName);
-  const studentId = user?.studentProfile?.studentId || "StudentOS";
+  const studentId = session.user.studentProfile?.studentId || "StudentOS";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#EAE6DE] text-[#1C1917] p-4 md:p-6 lg:p-8 relative">

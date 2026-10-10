@@ -10,7 +10,7 @@ import {
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireAdmin } from "@/lib/auth/rbac";
 
 const adminNavItems: NavItem[] = [
   { label: "Overview", href: "/admin/dashboard", icon: <ShieldCheck /> },
@@ -23,8 +23,8 @@ const adminNavItems: NavItem[] = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
-  const displayName = user?.name || "System Admin";
+  const session = await requireAdmin();
+  const displayName = session.user.name || "System Admin";
 
   return (
     <div className="min-h-screen flex flex-col bg-[#EAE6DE] text-[#1C1917] p-4 md:p-6 lg:p-8">

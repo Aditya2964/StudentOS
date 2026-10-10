@@ -1,11 +1,14 @@
-import { BentoCard, BentoGrid } from "@/components/ui/bento-card";
+import { BentoCard } from "@/components/ui/bento-card";
 import { Clock, MapPin, User, Calendar } from "lucide-react";
 import { getTimetableData } from "@/lib/actions/timetable";
+import { getCurrentUser } from "@/lib/auth/session";
 
 const DAY_NAMES = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 export default async function StudentTimetablePage() {
-  const data = await getTimetableData();
+  const currentUser = await getCurrentUser();
+  const classId = currentUser?.studentProfile?.classId || undefined;
+  const data = await getTimetableData(classId);
 
   // Group slots by day of week
   const groupedDays = [1, 2, 3, 4, 5, 6].map((dayNum) => {
@@ -54,7 +57,6 @@ export default async function StudentTimetablePage() {
 
   const weeklySchedule = hasAnySlots ? groupedDays.filter((g) => g.slots.length > 0) : fallbackSchedule;
 
-
   return (
     <div className="flex flex-col gap-6 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-[#F9F8F4] border border-[#E7E5E4] rounded-[2.5rem] shadow-xs">
@@ -65,7 +67,7 @@ export default async function StudentTimetablePage() {
 
         <div className="flex items-center gap-2 bg-[#1C1917] text-white px-4 py-2 rounded-full text-xs font-medium">
           <Calendar className="w-4 h-4 text-[#FACC15]" />
-          <span>Semester 5 • Section A</span>
+          <span>{data.activeClassName ? `Class: ${data.activeClassName}` : "Semester 5 • Section A"}</span>
         </div>
       </div>
 

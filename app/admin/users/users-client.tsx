@@ -14,8 +14,14 @@ type UserProfile = {
   email: string;
   role: UserRole;
   createdAt: Date;
-  studentProfile: { userId: string; studentId: string; rollNumber: string | null } | null;
+  studentProfile: { userId: string; studentId: string; classId?: string | null; className?: string | null; rollNumber: string | null } | null;
   teacherProfile: { userId: string; teacherId: string; department: string | null } | null;
+};
+
+type AvailableClass = {
+  id: string;
+  name: string;
+  department: string;
 };
 
 const ROLE_CONFIG = {
@@ -24,7 +30,13 @@ const ROLE_CONFIG = {
   ADMIN: { label: "Admin", icon: <ShieldCheck className="w-3.5 h-3.5" />, color: "bg-amber-100 text-amber-800", dot: "bg-amber-500" },
 };
 
-export default function UsersClient({ initialUsers }: { initialUsers: UserProfile[] }) {
+export default function UsersClient({
+  initialUsers,
+  availableClasses = [],
+}: {
+  initialUsers: UserProfile[];
+  availableClasses?: AvailableClass[];
+}) {
   const [users, setUsers] = useState<UserProfile[]>(initialUsers);
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
@@ -36,7 +48,7 @@ export default function UsersClient({ initialUsers }: { initialUsers: UserProfil
   // Form state
   const [form, setForm] = useState({
     name: "", email: "", password: "", role: "STUDENT" as UserRole,
-    studentId: "", rollNumber: "", teacherId: "", department: "",
+    studentId: "", classId: "", rollNumber: "", teacherId: "", department: "",
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -70,15 +82,16 @@ export default function UsersClient({ initialUsers }: { initialUsers: UserProfil
       setFormLoading(false);
       if (result.success) {
         setShowModal(false);
-        setForm({ name: "", email: "", password: "", role: "STUDENT", studentId: "", rollNumber: "", teacherId: "", department: "" });
+        const selectedClass = availableClasses.find((c) => c.id === form.classId);
+        setForm({ name: "", email: "", password: "", role: "STUDENT", studentId: "", classId: "", rollNumber: "", teacherId: "", department: "" });
         // Optimistically add to list for instant UI feedback
         const newUser: UserProfile = {
           id: result.userId || `temp-${Date.now()}`,
-          name: form.name,
-          email: form.email,
+          name: form.name.trim(),
+          email: form.email.trim().toLowerCase(),
           role: form.role,
           createdAt: new Date(),
-          studentProfile: form.role === "STUDENT" ? { userId: "", studentId: form.studentId || "—", rollNumber: form.rollNumber || null } : null,
+          studentProfile: form.role === "STUDENT" ? { userId: "", studentId: form.studentId || "—", classId: form.classId || null, className: selectedClass?.name || null, rollNumber: form.rollNumber || null } : null,
           teacherProfile: form.role === "TEACHER" ? { userId: "", teacherId: form.teacherId || "—", department: form.department || null } : null,
         };
         setUsers((prev) => [...prev, newUser]);
@@ -221,11 +234,18 @@ export default function UsersClient({ initialUsers }: { initialUsers: UserProfil
                 </div>
 
                 {/* ID + Extra info */}
-                <div className="pt-1 border-t border-[#E7E5E4] flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-[#1C1917] bg-[#E7E5E4] px-2 py-0.5 rounded-lg">
-                    {idLabel || "—"}
-                  </span>
-                  {sub && <span className="text-[11px] text-[#78716C]">{sub}</span>}
+                <div className="pt-1 border-t border-[#E7E5E4] flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[11px] text-[#1C1917] bg-[#E7E5E4] px-2 py-0.5 rounded-lg">
+                      {idLabel || "—"}
+                    </span>
+                    {sub && <span className="text-[11px] text-[#78716C]">{sub}</span>}
+                  </div>
+                  {u.role === "STUDENT" && u.studentProfile?.className && (
+                    <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md w-fit">
+                      Class: {u.studentProfile.className}
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -310,24 +330,43 @@ export default function UsersClient({ initialUsers }: { initialUsers: UserProfil
 
               {/* Student-specific fields */}
               {form.role === "STUDENT" && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="relative">
-                    <IdCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
-                    <input
-                      value={form.studentId}
-                      onChange={(e) => setForm((f) => ({ ...f, studentId: e.target.value }))}
-                      placeholder="Student ID (e.g. 2024CS101)"
-                      className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E7E5E4] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1C1917]"
-                    />
+                <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="relative">
+                      <IdCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+                      <input
+                        value={form.studentId}
+                        onChange={(e) => setForm((f) => ({ ...f, studentId: e.target.value }))}
+                        placeholder="Student ID (e.g. 2024CS101)"
+                        className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E7E5E4] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1C1917]"
+                      />
+                    </div>
+                    <div className="relative">
+                      <IdCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
+                      <input
+                        value={form.rollNumber}
+                        onChange={(e) => setForm((f) => ({ ...f, rollNumber: e.target.value }))}
+                        placeholder="Roll Number"
+                        className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E7E5E4] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1C1917]"
+                      />
+                    </div>
                   </div>
+
+                  {/* Class Selection Dropdown */}
                   <div className="relative">
-                    <IdCard className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C]" />
-                    <input
-                      value={form.rollNumber}
-                      onChange={(e) => setForm((f) => ({ ...f, rollNumber: e.target.value }))}
-                      placeholder="Roll Number"
-                      className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E7E5E4] rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1C1917]"
-                    />
+                    <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#78716C] pointer-events-none z-10" />
+                    <select
+                      value={form.classId}
+                      onChange={(e) => setForm((f) => ({ ...f, classId: e.target.value }))}
+                      className="w-full pl-9 pr-8 py-2.5 bg-white border border-[#E7E5E4] rounded-xl text-xs text-[#1C1917] focus:outline-none focus:ring-2 focus:ring-[#1C1917] appearance-none"
+                    >
+                      <option value="">-- Assign Class Section (Optional) --</option>
+                      {availableClasses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.department})
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}

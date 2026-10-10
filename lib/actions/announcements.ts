@@ -5,6 +5,8 @@ import { announcements, notifications, users } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/session";
+import { assertTeacherOrAdmin } from "@/lib/auth/rbac";
+import { formatErrorMessage } from "@/lib/utils/error-formatter";
 
 export interface CreateAnnouncementData {
   title: string;
@@ -49,36 +51,14 @@ export async function getAnnouncementsAction() {
 
 export async function createAnnouncementAction(data: CreateAnnouncementData) {
   try {
+    // 1. Authorize: Only educators or administrators can publish official announcements
+    const currentUser = await assertTeacherOrAdmin();
+
     if (!data.title || !data.content) {
       return { success: false, error: "Title and content are required." };
     }
 
-    // 1. Get current logged in author
-    const currentUser = await getCurrentUser();
-    let authorId = currentUser?.id;
-
-    // Fallback if accessed without full session: pick any teacher/admin or first user
-    if (!authorId) {
-      const [anyTeacher] = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.role, "TEACHER"))
-        .limit(1);
-
-      if (anyTeacher) {
-        authorId = anyTeacher.id;
-      } else {
-        const [firstUser] = await db.select({ id: users.id }).from(users).limit(1);
-        if (firstUser) authorId = firstUser.id;
-      }
-    }
-
-    if (!authorId) {
-      return {
-        success: false,
-        error: "No author account found. Please ensure at least one user exists.",
-      };
-    }
+    const authorId = currentUser.id;
 
     // 2. Insert announcement
     const [newAnnouncement] = await db
@@ -125,7 +105,7 @@ export async function createAnnouncementAction(data: CreateAnnouncementData) {
     console.error("Create announcement error:", err);
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to broadcast announcement.",
+      error: formatErrorMessage(err, "Failed to broadcast announcement."),
     };
   }
 }
@@ -142,7 +122,7 @@ export async function deleteAnnouncementAction(id: string) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to delete announcement.",
+      error: formatErrorMessage(err, "Failed to delete announcement."),
     };
   }
 }

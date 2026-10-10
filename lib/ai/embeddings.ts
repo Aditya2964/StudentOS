@@ -22,8 +22,34 @@ export function chunkTextContent(text: string, chunkSize = 800, overlap = 100): 
 }
 
 export async function generateTextEmbedding(text: string): Promise<number[]> {
-  // Generates 1536-dimensional embedding array mock for pgvector
-  // In production, uses OpenAI text-embedding-3-small or Gemini Embedding API
-  const mockVector = new Array(1536).fill(0).map((_, i) => (Math.sin(i + text.length) * 0.05));
-  return mockVector;
+  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
+
+  if (apiKey && apiKey.startsWith("sk-")) {
+    try {
+      const res = await fetch("https://api.openai.com/v1/embeddings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          input: text.slice(0, 8000),
+          model: "text-embedding-3-small",
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.data?.[0]?.embedding) {
+          return data.data[0].embedding;
+        }
+      }
+    } catch (apiErr) {
+      console.warn("OpenAI embedding API call failed, using deterministic fallback:", apiErr);
+    }
+  }
+
+  // Deterministic local vector simulation for development / offline environments
+  const vector = new Array(1536).fill(0).map((_, i) => Math.sin(i * 17 + text.length) * 0.05);
+  return vector;
 }

@@ -15,6 +15,9 @@ export default function LoginPage() {
   const handleRoleChange = (role: "STUDENT" | "TEACHER" | "ADMIN") => {
     setSelectedRole(role);
     setError(null);
+    if (role === "STUDENT") setEmail("student@studentos.edu");
+    else if (role === "TEACHER") setEmail("teacher@studentos.edu");
+    else if (role === "ADMIN") setEmail("admin@studentos.edu");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,8 +43,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
-
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-6 bg-[#EAE6DE]">
@@ -164,7 +165,32 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="text-center pt-2 border-t border-[#E7E5E4]">
+        {/* Quick Demo Login Options */}
+        <div className="pt-2 border-t border-[#E7E5E4] flex flex-col gap-2 text-center">
+          <p className="text-[11px] font-medium text-[#78716C]">Instant Demo Access:</p>
+          <div className="flex items-center justify-center gap-2">
+            <a
+              href="/api/demo-login?role=student"
+              className="px-3 py-1.5 bg-[#F2EFE9] hover:bg-[#E7E5E4] text-[#1C1917] text-xs font-semibold rounded-full border border-[#E7E5E4] transition-all"
+            >
+              ⚡ Demo Student
+            </a>
+            <a
+              href="/api/demo-login?role=teacher"
+              className="px-3 py-1.5 bg-[#F2EFE9] hover:bg-[#E7E5E4] text-[#1C1917] text-xs font-semibold rounded-full border border-[#E7E5E4] transition-all"
+            >
+              ⚡ Demo Teacher
+            </a>
+            <a
+              href="/api/demo-login?role=admin"
+              className="px-3 py-1.5 bg-[#F2EFE9] hover:bg-[#E7E5E4] text-[#1C1917] text-xs font-semibold rounded-full border border-[#E7E5E4] transition-all"
+            >
+              ⚡ Demo Admin
+            </a>
+          </div>
+        </div>
+
+        <div className="text-center pt-1">
           <Link href="/" className="text-xs text-[#78716C] hover:text-[#1C1917] transition-colors">
             ← Back to StudentOS Home
           </Link>

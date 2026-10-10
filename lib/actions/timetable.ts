@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { timetables, exams, classes, subjects, teachers, users } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { formatErrorMessage } from "@/lib/utils/error-formatter";
+import { assertAdmin, assertTeacherOrAdmin } from "@/lib/auth/rbac";
 
 export interface AddTimetableSlotData {
   classId: string;
@@ -25,7 +27,7 @@ export interface AddExamData {
   instructions?: string;
 }
 
-export async function getTimetableData() {
+export async function getTimetableData(classIdFilter?: string) {
   try {
     // 1. Fetch reference lists
     const allClasses = await db.select().from(classes).orderBy(desc(classes.createdAt));
@@ -43,8 +45,8 @@ export async function getTimetableData() {
       .from(teachers)
       .innerJoin(users, eq(teachers.userId, users.id));
 
-    // 2. Fetch all timetable slots
-    const rawSlots = await db
+    // 2. Fetch timetable slots (filtered by class if specified)
+    let query = db
       .select({
         id: timetables.id,
         classId: timetables.classId,
@@ -61,10 +63,14 @@ export async function getTimetableData() {
       })
       .from(timetables)
       .leftJoin(classes, eq(timetables.classId, classes.id))
-      .leftJoin(subjects, eq(timetables.subjectId, subjects.id))
-      .orderBy(timetables.dayOfWeek, timetables.startTime);
+      .leftJoin(subjects, eq(timetables.subjectId, subjects.id));
+
+    const rawSlots = classIdFilter
+      ? (await query.where(eq(timetables.classId, classIdFilter))).sort((a, b) => a.dayOfWeek - b.dayOfWeek)
+      : await query.orderBy(timetables.dayOfWeek, timetables.startTime);
 
     const teacherMap = new Map(allTeachersData.map((t) => [t.id, t.name]));
+    const classMap = new Map(allClasses.map((c) => [c.id, c.name]));
 
     const enrichedSlots = rawSlots.map((slot) => ({
       ...slot,
@@ -96,6 +102,7 @@ export async function getTimetableData() {
       teachers: allTeachersData,
       timetableSlots: enrichedSlots,
       exams: rawExams,
+      activeClassName: classIdFilter ? classMap.get(classIdFilter) || null : null,
     };
   } catch (err) {
     console.error("Failed to fetch timetable data:", err);
@@ -105,12 +112,15 @@ export async function getTimetableData() {
       teachers: [],
       timetableSlots: [],
       exams: [],
+      activeClassName: null,
     };
   }
 }
 
 export async function addTimetableSlotAction(data: AddTimetableSlotData) {
   try {
+    await assertAdmin();
+
     if (!data.classId || !data.subjectId || !data.startTime || !data.endTime || !data.room) {
       return { success: false, error: "Class, Subject, Day, Timings, and Room are required." };
     }
@@ -138,13 +148,14 @@ export async function addTimetableSlotAction(data: AddTimetableSlotData) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to create timetable slot.",
+      error: formatErrorMessage(err, "Failed to create timetable slot."),
     };
   }
 }
 
 export async function deleteTimetableSlotAction(slotId: string) {
   try {
+    await assertAdmin();
     await db.delete(timetables).where(eq(timetables.id, slotId));
     try {
       revalidatePath("/admin/timetable");
@@ -155,13 +166,15 @@ export async function deleteTimetableSlotAction(slotId: string) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to delete slot.",
+      error: formatErrorMessage(err, "Failed to delete slot."),
     };
   }
 }
 
 export async function addExamAction(data: AddExamData) {
   try {
+    await assertTeacherOrAdmin();
+
     if (!data.examType || !data.subjectId || !data.date || !data.startTime || !data.endTime || !data.room) {
       return { success: false, error: "All required exam details must be provided." };
     }
@@ -189,13 +202,14 @@ export async function addExamAction(data: AddExamData) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to schedule exam.",
+      error: formatErrorMessage(err, "Failed to schedule exam."),
     };
   }
 }
 
 export async function deleteExamAction(examId: string) {
   try {
+    await assertAdmin();
     await db.delete(exams).where(eq(exams.id, examId));
     try {
       revalidatePath("/admin/timetable");
@@ -205,7 +219,7 @@ export async function deleteExamAction(examId: string) {
   } catch (err: unknown) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Failed to delete exam.",
+      error: formatErrorMessage(err, "Failed to delete exam."),
     };
   }
 }

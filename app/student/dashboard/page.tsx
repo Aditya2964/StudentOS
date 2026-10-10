@@ -9,6 +9,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getStudentNotificationsAction } from "@/lib/actions/announcements";
 import { getTimetableData } from "@/lib/actions/timetable";
+import { getStudentAttendanceDataAction } from "@/lib/actions/attendance";
 
 export default async function StudentDashboardPage() {
   const user = await getCurrentUser();
@@ -19,7 +20,10 @@ export default async function StudentDashboardPage() {
   // 1. Fetch live notifications / announcements
   const liveNotifications = await getStudentNotificationsAction(user?.id);
 
-  // 2. Fetch live timetable
+  // 2. Fetch live attendance & streak metrics
+  const attendanceData = await getStudentAttendanceDataAction(user?.studentProfile?.id);
+
+  // 3. Fetch live timetable
   const timetableData = await getTimetableData();
   const todayDayOfWeek = new Date().getDay() || 7; // 1 = Mon ... 7 = Sun
   const todaySlots = timetableData.timetableSlots.filter((s) => s.dayOfWeek === todayDayOfWeek);
@@ -78,15 +82,15 @@ export default async function StudentDashboardPage() {
       <BentoGrid>
         {/* Row 1: Attendance + Streak + Today's Schedule */}
         <AttendanceCard
-          percentage={87.5}
-          statusLabel="SAFE"
-          predictionSentence="87.5% — You can miss approximately 14 more working days before reaching the 75% target threshold."
+          percentage={attendanceData.stats.percentage}
+          statusLabel={attendanceData.stats.statusLabel}
+          predictionSentence={attendanceData.prediction.predictionSentence}
         />
 
         <StreakWidget
-          currentStreak={32}
-          nextMilestoneTitle="Consistency Champion"
-          nextMilestoneCount={60}
+          currentStreak={attendanceData.streak.currentStreak}
+          nextMilestoneTitle={attendanceData.streak.currentStreak >= 30 ? "Consistency Legend" : "Consistency Champion"}
+          nextMilestoneCount={attendanceData.streak.currentStreak >= 30 ? 60 : 30}
         />
 
         <ScheduleCard classes={displaySchedule} />
