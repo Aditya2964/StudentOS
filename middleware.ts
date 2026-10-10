@@ -11,8 +11,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/demo-login") ||
     pathname.startsWith("/api/inngest") ||
+    pathname.startsWith("/login") ||
     pathname === "/" ||
-    pathname === "/login" ||
     pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
@@ -25,7 +25,16 @@ export async function middleware(request: NextRequest) {
     request.cookies.get("__Secure-better-auth.session_token")?.value;
 
   if (!sessionToken) {
-    const loginUrl = new URL("/login", request.url);
+    let targetLoginPath = "/login";
+    if (pathname.startsWith("/admin")) {
+      targetLoginPath = "/login/admin";
+    } else if (pathname.startsWith("/teacher")) {
+      targetLoginPath = "/login/teacher";
+    } else if (pathname.startsWith("/student")) {
+      targetLoginPath = "/login/student";
+    }
+
+    const loginUrl = new URL(targetLoginPath, request.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
   }

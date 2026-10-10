@@ -190,6 +190,31 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Dedicated Portals Section */}
+        <div className="pt-2 border-t border-[#E7E5E4] flex flex-col gap-2 text-center">
+          <p className="text-[11px] font-medium text-[#78716C]">Dedicated Section Portals:</p>
+          <div className="grid grid-cols-3 gap-2">
+            <Link
+              href="/login/student"
+              className="py-1.5 px-2 bg-amber-50 hover:bg-amber-100/80 text-amber-900 border border-amber-200 text-[11px] font-medium rounded-xl transition-all"
+            >
+              Student Portal
+            </Link>
+            <Link
+              href="/login/teacher"
+              className="py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-900 border border-emerald-200 text-[11px] font-medium rounded-xl transition-all"
+            >
+              Teacher Desk
+            </Link>
+            <Link
+              href="/login/admin"
+              className="py-1.5 px-2 bg-stone-900 hover:bg-stone-800 text-[#FACC15] border border-stone-800 text-[11px] font-medium rounded-xl transition-all"
+            >
+              Admin Console
+            </Link>
+          </div>
+        </div>
+
         <div className="text-center pt-1">
           <Link href="/" className="text-xs text-[#78716C] hover:text-[#1C1917] transition-colors">
             ← Back to StudentOS Home
