@@ -2,16 +2,29 @@ import { inngest } from "@/lib/inngest/client";
 import { processNormalizedAttendance } from "@/lib/attendance/service";
 import { logAttendanceImport } from "@/lib/attendance/import-logger";
 
+interface ExcelImportEventData {
+  importId?: string;
+  fileName: string;
+  importedBy: string;
+  rawRecords: Array<{
+    studentId: string;
+    date: string;
+    checkIn?: string | null;
+    checkOut?: string | null;
+    status: "PRESENT" | "ABSENT" | "HALF_DAY" | "HOLIDAY";
+  }>;
+}
+
 export const asyncExcelImportJob = inngest.createFunction(
   {
     id: "async-excel-attendance-import",
     name: "Async Large Excel Attendance Import Job",
     triggers: [{ event: "studentos/attendance.excel-import" }],
   },
-  async ({ event, step }: { event: any; step: any }) => {
-    const { importId, fileName, importedBy, rawRecords } = event.data as any;
+  async ({ event, step }) => {
+    const { importId, fileName, importedBy, rawRecords } = event.data as unknown as ExcelImportEventData;
 
-    const normalizedRecords = rawRecords.map((r: any) => ({
+    const normalizedRecords = (rawRecords || []).map((r) => ({
       studentId: r.studentId,
       date: r.date,
       checkIn: r.checkIn ?? undefined,

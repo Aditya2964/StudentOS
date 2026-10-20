@@ -9,7 +9,7 @@ export const scheduledNotificationDispatcherJob = inngest.createFunction(
     name: "Scheduled Notification Dispatcher",
     triggers: [{ cron: "0 8 * * *" }],
   },
-  async ({ step }: { step: any }) => {
+  async ({ step }) => {
     const allStudents = await step.run("fetch-active-students", async () => {
       return await db.select({ id: students.id, userId: students.userId }).from(students);
     });

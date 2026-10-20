@@ -10,7 +10,7 @@ export const vectorizeNotesJob = inngest.createFunction(
     triggers: [{ event: "studentos/notes.vectorize" }],
   },
   async ({ event, step }) => {
-    const { noteId, rawText } = event.data as any;
+    const { noteId, rawText } = (event.data || {}) as { noteId: string; rawText: string };
 
     const chunks = await step.run("chunk-pdf-text", async () => {
       return chunkTextContent(rawText);

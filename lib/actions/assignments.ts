@@ -41,7 +41,7 @@ export async function getStudentAssignments(subjectFilter?: string): Promise<Ass
 
     if (dbAssignments.length > 0) {
       // Fetch submissions for current student if logged in
-      let submissionMap = new Map<string, { submittedAt: Date; grade: number | null; status: string }>();
+      const submissionMap = new Map<string, { submittedAt: Date; grade: number | null; status: string }>();
 
       if (user?.studentProfile?.id) {
         const userSubs = await db

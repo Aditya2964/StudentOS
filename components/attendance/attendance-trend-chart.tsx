@@ -65,6 +65,7 @@ export function AttendanceTrendChart({
                 color: "#FFFFFF",
                 fontSize: "12px",
               }}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               formatter={(val: any) => [`${val ?? 0}%`, "Attendance"]}
             />
             <ReferenceLine y={targetThreshold} stroke="#EF4444" strokeDasharray="3 3" />

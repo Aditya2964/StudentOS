@@ -3,10 +3,6 @@ import { attendanceRecords, students } from "@/db/schema";
 import { inArray } from "drizzle-orm";
 import { NormalizedAttendanceRecord, AttendanceImportResult } from "./types";
 import { formatErrorMessage } from "@/lib/utils/error-formatter";
-import { parseExcelAttendance } from "./adapters/excel-adapter";
-import { logAttendanceImport } from "./import-logger";
-import { assertAdmin } from "@/lib/auth/rbac";
-import { revalidatePath } from "next/cache";
 import { inngest } from "@/lib/inngest/client";
 
 const BATCH_CHUNK_SIZE = 500;
@@ -165,59 +161,3 @@ export async function processNormalizedAttendance(
   return result;
 }
 
-/**
- * Server Action for importing biometric spreadsheet files (.xlsx, .xls, .csv).
- * Enforces admin authorization, parses files via SheetJS, executes batch insertion,
- * and records import audit logs.
- */
-export async function importExcelAttendanceAction(formData: FormData) {
-  try {
-    const admin = await assertAdmin();
-
-    const file = formData.get("file") as File | null;
-    if (!file) {
-      return { success: false, error: "Please select a valid spreadsheet file to upload." };
-    }
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Parse records using SheetJS
-    const normalizedRecords = parseExcelAttendance(buffer);
-
-    if (normalizedRecords.length === 0) {
-      return {
-        success: false,
-        error: "No valid attendance records found in the uploaded file. Please verify columns (Student ID, Date, Status).",
-      };
-    }
-
-    // Process records into DB
-    const result = await processNormalizedAttendance(normalizedRecords);
-
-    // Log the import batch
-    const importLogId = await logAttendanceImport(file.name, admin.name || "Administrator", result);
-    result.importId = importLogId || undefined;
-
-    try {
-      revalidatePath("/admin/attendance/import");
-      revalidatePath("/admin/attendance/logs");
-      revalidatePath("/admin/dashboard");
-      revalidatePath("/student/attendance");
-      revalidatePath("/student/dashboard");
-    } catch {
-      // Ignored outside Next.js request context
-    }
-
-    return {
-      success: true,
-      report: result,
-    };
-  } catch (err: unknown) {
-    console.error("Excel import action error:", err);
-    return {
-      success: false,
-      error: formatErrorMessage(err, "Failed to import spreadsheet attendance data."),
-    };
-  }
-}

@@ -11,6 +11,10 @@ export interface ChatMessage {
   sources?: { title: string; id: string }[];
 }
 
+function createMessageId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
 export function AIChatPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -33,7 +37,7 @@ export function AIChatPanel() {
     const query = textToSend || input;
     if (!query.trim() || loading) return;
 
-    const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: "user", content: query };
+    const userMsg: ChatMessage = { id: createMessageId("u"), role: "user", content: query };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setLoading(true);
@@ -49,7 +53,7 @@ export function AIChatPanel() {
       setMessages((prev) => [
         ...prev,
         {
-          id: `a-${Date.now()}`,
+          id: createMessageId("a"),
           role: "assistant",
           content: data.content,
           sources: data.sources,

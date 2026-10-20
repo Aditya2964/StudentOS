@@ -46,7 +46,7 @@ export async function getTimetableData(classIdFilter?: string) {
       .innerJoin(users, eq(teachers.userId, users.id));
 
     // 2. Fetch timetable slots (filtered by class if specified)
-    let query = db
+    const query = db
       .select({
         id: timetables.id,
         classId: timetables.classId,

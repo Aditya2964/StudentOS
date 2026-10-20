@@ -11,8 +11,8 @@ export const postAttendanceTriggerJob = inngest.createFunction(
     name: "Post-Attendance Streak & Achievement Trigger",
     triggers: [{ event: "studentos/attendance.updated" }],
   },
-  async ({ event, step }: { event: any; step: any }) => {
-    const { studentId } = event.data as any;
+  async ({ event, step }) => {
+    const { studentId } = (event.data || {}) as { studentId: string };
 
     // 1. Fetch student attendance records
     const records = await step.run("fetch-student-records", async () => {

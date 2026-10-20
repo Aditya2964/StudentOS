@@ -9,7 +9,7 @@ export const scheduledAttendanceSync = inngest.createFunction(
     name: "Scheduled Biometric Attendance API Sync",
     triggers: [{ cron: "0 16 * * *" }],
   },
-  async ({ step }: { step: any }) => {
+  async ({ step }) => {
     const records = await step.run("fetch-biometric-api-data", async () => {
       const apiUrl = process.env.ATTENDANCE_API_URL;
       const apiKey = process.env.ATTENDANCE_API_KEY || "demo-key";

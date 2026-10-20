@@ -324,7 +324,15 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     }
 
     return null;
-  } catch (err) {
+  } catch (err: unknown) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "digest" in err &&
+      (err as { digest?: string }).digest === "DYNAMIC_SERVER_USAGE"
+    ) {
+      throw err;
+    }
     console.error("Failed to get current user:", err);
     return null;
   }

@@ -35,7 +35,22 @@ export async function fetchBiometricApiAttendance(
   }
 
   const data = await response.json();
-  const rawRecords: any[] = Array.isArray(data) ? data : data.records || [];
+
+  interface RawApiRecord {
+    studentId?: string | number;
+    rollNo?: string | number;
+    empCode?: string | number;
+    date?: string;
+    checkIn?: string | null;
+    punchIn?: string | null;
+    checkOut?: string | null;
+    punchOut?: string | null;
+    status?: string;
+  }
+
+  const rawRecords: RawApiRecord[] = Array.isArray(data)
+    ? (data as RawApiRecord[])
+    : ((data as { records?: RawApiRecord[] }).records || []);
 
   return rawRecords.map((item) => ({
     studentId: String(item.studentId || item.rollNo || item.empCode).trim(),

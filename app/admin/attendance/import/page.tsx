@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BentoCard } from "@/components/ui/bento-card";
 import { FileSpreadsheet, Upload, AlertCircle, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
-import { importExcelAttendanceAction } from "@/lib/attendance/service";
+import { importExcelAttendanceAction } from "@/lib/actions/attendance";
 import type { AttendanceImportResult } from "@/lib/attendance/types";
 
 export default function AdminAttendanceImportPage() {
